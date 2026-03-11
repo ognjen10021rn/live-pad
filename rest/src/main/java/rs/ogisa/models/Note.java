@@ -1,14 +1,13 @@
 package rs.ogisa.models;
 
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import javax.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.Date;
 
 @Entity
 @Setter
@@ -36,7 +35,7 @@ public class Note implements Serializable {
     private LocalDateTime updatedAt;
 
     @Version
-    private int version;
+    private Integer version;
 
     
 }

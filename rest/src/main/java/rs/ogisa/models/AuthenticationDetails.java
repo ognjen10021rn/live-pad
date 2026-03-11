@@ -9,4 +9,6 @@ public interface AuthenticationDetails {
 
     Long getUserId();
 
+    String getRole();
+
 }

@@ -18,4 +18,6 @@ public class UserDto implements Serializable, AuthenticationDetails {
 
     private String password;
 
+    private String role;
+
 }

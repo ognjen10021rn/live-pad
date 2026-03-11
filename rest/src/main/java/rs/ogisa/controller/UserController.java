@@ -1,6 +1,5 @@
 package rs.ogisa.controller;
 
-import io.swagger.v3.oas.annotations.Operation;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -28,7 +27,6 @@ public class UserController {
 
 
     @PostMapping("/auth/login")
-    @Operation(description = "za Login korisnika")
     public ResponseEntity<?> login(@RequestBody LoginRequestDto loginRequest) {
         try {
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getUsernameOrEmail(),
@@ -42,7 +40,6 @@ public class UserController {
     }
 
     @PostMapping("/auth/register")
-    @Operation(description = "register korisnika")
     public ResponseEntity<?> register(@RequestBody CreateUserDto registerRequest) {
         userService.createUser(registerRequest);
         return ResponseEntity.ok(new LoginResponse(jwtUtil.generateToken(userService.getUserByUsernameOrEmail(registerRequest.getUsername()))));
@@ -50,7 +47,6 @@ public class UserController {
 
     // TODO GITHUB REGISTER
     @GetMapping("/auth/githubRegister")
-    @Operation(description = "register korisnika")
     public ResponseEntity<?> githubRegister() {
         // login/oauth2/code/github
         //http://localhost:8080/oauth2/authorization/github

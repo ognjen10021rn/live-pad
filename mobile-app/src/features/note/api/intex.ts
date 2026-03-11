@@ -1,6 +1,7 @@
 import { API_URL } from "@/paths";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { UserModelDto } from "../../types/user-model";
+import { CreatePollRequest, Poll } from "../types";
 
 export class FetchUsersError extends Error {
   constructor(message: string, public status?: number) {
@@ -262,5 +263,129 @@ export async function createNote(
     throw new CreateNoteError(
       error instanceof Error ? error.message : "An unknown error occured"
     );
+  }
+}
+
+// Create a new poll
+export async function createPoll(
+  poll: Omit<CreatePollRequest, "id" | "createdAt" | "totalVotes">
+): Promise<Poll> {
+  console.log(poll);
+  try {
+    const response = await fetch(`${API_URL}/api/v1/polls`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${await AsyncStorage.getItem("token")}`,
+      },
+      body: JSON.stringify(poll),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to create poll");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error creating poll:", error);
+    throw error;
+  }
+}
+
+export async function getPollsByNoteId(noteId: number): Promise<Poll[]> {
+  try {
+    const response = await fetch(`${API_URL}/api/v1/polls?noteId=${noteId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${await AsyncStorage.getItem("token")}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch polls");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching polls:", error);
+    throw error;
+  }
+}
+
+export async function vote(
+  pollId: number,
+  optionId: number,
+  userId: number
+): Promise<Poll> {
+  try {
+    const response = await fetch(`${API_URL}/api/v1/polls/${pollId}/vote`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${await AsyncStorage.getItem("token")}`,
+      },
+      body: JSON.stringify({
+        optionId,
+        userId,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to submit vote");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error submitting vote:", error);
+    throw error;
+  }
+}
+
+export async function deletePoll(
+  pollId: number,
+  userId: number
+): Promise<void> {
+  try {
+    const response = await fetch(`${API_URL}/api/v1/polls/${pollId}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${await AsyncStorage.getItem("token")}`,
+      },
+      body: JSON.stringify({ userId }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to delete poll");
+    }
+  } catch (error) {
+    console.error("Error deleting poll:", error);
+    throw error;
+  }
+}
+
+export async function updatePoll(
+  pollId: number,
+  updates: Partial<Poll>
+): Promise<Poll> {
+  try {
+    const response = await fetch(`${API_URL}/api/v1/polls/${pollId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${await AsyncStorage.getItem("token")}`,
+      },
+      body: JSON.stringify(updates),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to update poll");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error updating poll:", error);
+    throw error;
   }
 }

@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams, useNavigation } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useReducer, useState } from "react";
 import {
   StyleSheet,
   View,
@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   TextInput,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { API_URL } from "@/paths";
 import { format } from "date-fns";
@@ -16,9 +17,20 @@ import UserAvatars from "../../src/features/note/components/user-avatars";
 import AddRemoveUsersFromNote from "../../src/features/note/components/add-remove-users-from-note";
 import EditNoteAction from "@/src/features/note/components/edit-note-action";
 import { UserModelDto } from "../../src/features/types/user-model";
-import { EditNoteDto, NoteModel } from "../../src/features/note/types";
+import {
+  CreatePollRequest,
+  EditNoteDto,
+  NoteModel,
+  Poll,
+} from "../../src/features/note/types";
 import { editNoteActionsList } from "../../src/features/note/constants/edit-note-action-list";
 import websocketService from "@/src/features/api/web-sockets";
+import {
+  createPoll,
+  getPollsByNoteId,
+  vote,
+} from "@/src/features/note/api/intex";
+import PollCard from "@/src/features/note/components/poll-card";
 
 export default function EditNote() {
   const { noteId } = useLocalSearchParams();
@@ -68,6 +80,52 @@ export default function EditNote() {
     }
   };
 
+  const [polls, setPolls] = useState<Poll[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [, forceUpdate] = useReducer(x => x + 1, 0);
+
+  // Load polls when screen opens
+  useEffect(() => {
+    loadPolls();
+  }, [noteId]);
+
+  const loadPolls = async () => {
+    try {
+      setLoading(true);
+      const pollsData = await getPollsByNoteId(Number(noteId));
+      setPolls(pollsData);
+    } catch (error) {
+      console.error("Error loading polls:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePollCreate = async (
+    pollData: Omit<CreatePollRequest, "id" | "createdAt" | "totalVotes">
+  ) => {
+    try {
+      const newPoll = await createPoll(pollData);
+      setPolls([newPoll, ...polls]);
+    } catch (error) {
+      console.error("Error creating poll:", error);
+      alert("Failed to create poll. Please try again.");
+    }
+  };
+
+  const handleVote = async (pollId: number, optionId: number) => {
+    try {
+      const updatedPoll = await vote(pollId, optionId, Number(userId));
+
+      setPolls(polls.map((poll) => (poll.id === pollId ? updatedPoll : poll)));
+
+      await loadPolls();
+    } catch (error) {
+      console.error("Error voting:", error);
+      alert("Failed to submit vote. Please try again.");
+    }
+  };
+
   const submit = async () => {
     if (!note) {
       return;
@@ -83,8 +141,6 @@ export default function EditNote() {
     websocketService.sendMessage(payload);
   };
   const fetchUsersInNote = async () => {
-    // setShowMenu(true)
-    console.log("Fetching users not in note!");
     await fetch(
       `${API_URL}/api/v1/user/getAllUsersFromNoteUsingNoteId/${noteId}/${userId}`,
       {
@@ -148,10 +204,6 @@ export default function EditNote() {
     fetchUsersInNote();
   };
   return (
-    // <FontAwesome5 name="calendar" size={24} color="black" />
-    //  <FontAwesome5 name="poll" size={24} color="black" />
-    //  <FontAwesome5 name="camera" size={24} color="black" />
-
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={{ flex: 1 }}
@@ -180,6 +232,10 @@ export default function EditNote() {
               name={action.name}
               type={action.type}
               icon={action.icon}
+              content={note?.content}
+              noteId={note?.noteId}
+              userId={Number(userId)}
+              onPollCreate={handlePollCreate}
             />
           ))}
         </View>
@@ -200,6 +256,23 @@ export default function EditNote() {
             placeholderTextColor='#888'
           />
         </View>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size='large' color='#4a90e2' />
+          </View>
+        ) : polls.length > 0 ? (
+          <View style={styles.pollsSection}>
+            <Text style={styles.sectionTitle}>Polls</Text>
+            {polls.map((poll) => (
+              <PollCard
+                key={poll.id}
+                poll={poll}
+                currentUserId={Number(userId)}
+                onVote={handleVote}
+              />
+            ))}
+          </View>
+        ) : null}
         <View style={styles.buttonGroup}>
           <Pressable
             onPress={submit}
@@ -339,5 +412,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderBottomColor: "#444",
     borderBottomWidth: 1,
+  },
+  pollsSection: {
+    padding: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#fff",
+    marginBottom: 12,
+  },
+  loadingContainer: {
+    padding: 40,
+    alignItems: "center",
   },
 });

@@ -60,6 +60,7 @@ public class UserService {
         userDto.setUsername(user.getUsername());
         userDto.setEmail(user.getEmail());
         userDto.setPassword(user.getPassword());
+        userDto.setRole(user.getRole().name());
         return userDto;
     }
 

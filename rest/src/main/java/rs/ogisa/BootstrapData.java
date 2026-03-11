@@ -17,12 +17,13 @@ public class BootstrapData implements CommandLineRunner {
     @Override
     public void run(String... args) {
 
-        User user = new User();
-        user.setUserId(1L);
-        user.setUsername("ogisa");
-        user.setEmail("ogisa@ogisa.com");
-        user.setPassword(passwordEncoder.encode("1234"));
+        if(userRepository.findAll().isEmpty()){
+            User user = new User();
+            user.setUsername("ogisa");
+            user.setEmail("ogisa@ogisa.com");
+            user.setPassword(passwordEncoder.encode("1234"));
 
-        userRepository.save(user);
+            userRepository.save(user);
+        }
     }
 }

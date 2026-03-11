@@ -1,14 +1,14 @@
 # syntax=docker/dockerfile:1.7
 
 # ---- Dependencies stage ----
-FROM maven:3.9.9-eclipse-temurin-17-alpine AS deps
+FROM maven:3.9.9-eclipse-temurin-21-alpine AS deps
 WORKDIR /app
 
 COPY pom.xml .
 RUN mvn -q -DskipTests dependency:go-offline
 
 # ---- Build stage ----
-FROM maven:3.9.9-eclipse-temurin-17-alpine AS builder
+FROM maven:3.9.9-eclipse-temurin-21-alpine AS builder
 WORKDIR /app
 
 COPY pom.xml .
@@ -19,7 +19,7 @@ RUN --mount=type=cache,target=/root/.m2 mvn -DfinalName=app -DskipTests clean pa
 RUN java -Djarmode=layertools -jar target/*.jar extract --destination /layers
 
 # ---- Dev stage (hot reload) ----
-FROM maven:3.9.9-eclipse-temurin-17-alpine AS dev
+FROM maven:3.9.9-eclipse-temurin-21-alpine AS dev
 WORKDIR /app
 
 COPY pom.xml .
@@ -41,7 +41,7 @@ EXPOSE 8080
 ENTRYPOINT ["/docker-entrypoint.sh"]
 
 # ---- Runtime (prod) stage ----
-FROM eclipse-temurin:17-jre-alpine AS prod
+FROM eclipse-temurin:21-jre-alpine AS prod
 WORKDIR /app
 
 RUN addgroup -S app && adduser -S app -G app
