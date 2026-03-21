@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import rs.ogisa.dto.CreateUserDto;
 import rs.ogisa.dto.ManageUserDto;
 import rs.ogisa.dto.UserDto;
+import rs.ogisa.dto.AdminCreateUserDto;
 import rs.ogisa.models.Role;
 import rs.ogisa.models.User;
 import rs.ogisa.models.UserNote;
@@ -19,6 +20,7 @@ import rs.ogisa.repositories.UserRepository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import rs.ogisa.exceptions.UserNotFoundException;
 
 @Service
 @RequiredArgsConstructor
@@ -78,6 +80,38 @@ public class UserService {
     }
     public List<User> getAllUsersWithoutId(Long id) {
         return userRepository.findAllUserByUserIdNot(id);
+    }
+
+    // ── Admin operations ─────────────────────────────────────────────────────
+
+    public boolean createUserWithRole(AdminCreateUserDto dto) {
+        User existing = userRepository.findByUsernameOrEmail(dto.getUsername(), dto.getEmail());
+        if (existing != null) {
+            return false;
+        }
+        Role parsedRole;
+        try {
+            parsedRole = (dto.getRole() != null && !dto.getRole().isBlank())
+                    ? Role.valueOf(dto.getRole())
+                    : Role.ROLE_USER;
+        } catch (IllegalArgumentException e) {
+            parsedRole = Role.ROLE_USER;
+        }
+        User user = new User();
+        user.setEmail(dto.getEmail());
+        user.setUsername(dto.getUsername() != null && !dto.getUsername().isBlank()
+                ? dto.getUsername()
+                : dto.getEmail().split("@")[0]);
+        user.setPassword(passwordEncoder.encode(dto.getPassword()));
+        user.setRole(parsedRole);
+        userRepository.save(user);
+        return true;
+    }
+
+    public void deleteUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException(userId));
+        userRepository.delete(user);
     }
 
     public List<User>getAllUsersFromNoteUsingNoteId(Long noteId, Long userId) {

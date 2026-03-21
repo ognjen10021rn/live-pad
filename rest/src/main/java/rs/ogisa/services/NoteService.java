@@ -128,4 +128,14 @@ public class NoteService {
 
     }
 
+    // ── Admin operations ─────────────────────────────────────────────────────
+
+    public ResponseEntity<?> adminDeleteNote(Long noteId) {
+        Note note = noteRepository.findByNoteId(noteId)
+                .orElseThrow(() -> new NoteNotFoundException(noteId));
+        note.setIsDeleted(true);
+        noteRepository.save(note);
+        return ResponseEntity.ok().build();
+    }
+
 }

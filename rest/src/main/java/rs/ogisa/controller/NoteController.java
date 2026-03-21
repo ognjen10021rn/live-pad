@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import rs.ogisa.dto.CreateNoteDto;
 import rs.ogisa.dto.EditNoteDto;
@@ -25,13 +26,12 @@ public class NoteController {
     @PostMapping("/createNote/{userId}")
     public ResponseEntity<Void> createNote(@PathVariable Long userId, @RequestBody CreateNoteDto createNoteDto) {
 
-        if(!noteService.createNote(userId, createNoteDto)){
+        if (!noteService.createNote(userId, createNoteDto)) {
             return ResponseEntity.badRequest().build();
         }
 
         return ResponseEntity.ok().build();
     }
-
 
     @GetMapping("/getNoteById/{noteId}")
     public Note getNoteById(@PathVariable Long noteId) {
@@ -42,6 +42,7 @@ public class NoteController {
     public List<UserNote> getAllUserNote() {
         return noteService.getAllUserNote();
     }
+
     @GetMapping("/getAllNote")
     public List<Note> getAllNotes() {
         return noteService.getAllNotes();
@@ -51,6 +52,7 @@ public class NoteController {
     public List<Note> getAllNotes(@PathVariable Long userId) {
         return noteService.getAllNotesByUserId(userId);
     }
+
     @GetMapping("/deleteNoteById/{noteId}")
     public ResponseEntity<?> deleteNoteById(@PathVariable Long noteId) {
         return noteService.deleteNoteById(noteId);
@@ -59,6 +61,20 @@ public class NoteController {
     @MessageMapping("/update-note")
     public void changeNoteContent(EditNoteDto editNoteDto) {
         Note changedNote = noteService.sendContentToUserNote(editNoteDto);
-        messagingTemplate.convertAndSend("/topic/note/"+changedNote.getNoteId(), changedNote);
+        messagingTemplate.convertAndSend("/topic/note/" + changedNote.getNoteId(), changedNote);
+    }
+
+    // ── Admin endpoints ───────────────────────────────────────────────────────
+
+    @GetMapping("/admin/getAllNotes")
+    @PreAuthorize("hasAuthority('ROLE_ADMINISTRATOR')")
+    public List<Note> adminGetAllNotes() {
+        return noteService.getAllNotes();
+    }
+
+    @DeleteMapping("/admin/delete/{noteId}")
+    @PreAuthorize("hasAuthority('ROLE_ADMINISTRATOR')")
+    public ResponseEntity<?> adminDeleteNote(@PathVariable Long noteId) {
+        return noteService.adminDeleteNote(noteId);
     }
 }
