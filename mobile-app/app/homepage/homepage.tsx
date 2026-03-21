@@ -11,7 +11,7 @@ import {
   KeyboardAvoidingView,
   KeyboardAvoidingViewComponent,
 } from "react-native";
-import { AntDesign, Ionicons } from "@expo/vector-icons";
+import { AntDesign, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import MasonryList from "@react-native-seoul/masonry-list";
 import Menu from "@/src/features/homepage/components/menu";
 import { UserModelDto } from "@/src/features/types/user-model";
@@ -22,6 +22,7 @@ import Note from "@/src/features/note/components/note";
 
 export default function HomePage() {
   const [user, setUser] = useState<UserModelDto>({} as UserModelDto);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showCreateNote, setShowCreateNote] = useState(false);
   const navigation = useNavigation();
@@ -81,6 +82,8 @@ export default function HomePage() {
 
   const initialize = async () => {
     let userCredentials: string | null = await AsyncStorage.getItem("user");
+    const adminFlag = await AsyncStorage.getItem("isAdmin");
+    if (adminFlag) setIsAdmin(JSON.parse(adminFlag));
     if (userCredentials != null) {
       let userModel: UserModelDto = JSON.parse(userCredentials);
       setUser(userModel);
@@ -100,12 +103,22 @@ export default function HomePage() {
     <View style={styles.darkTheme}>
       <View style={styles.header}>
         <Text style={styles.headerText}>Welcome {user.username}!</Text>
-        <Ionicons
-          onPress={() => setShowMenu(true)}
-          name='menu'
-          size={32}
-          color='white'
-        />
+        <View style={styles.headerIcons}>
+          {isAdmin && (
+            <Pressable
+              onPress={() => router.push("/admin/dashboard")}
+              hitSlop={10}
+            >
+              <MaterialIcons name="admin-panel-settings" size={28} color="#FFA500" />
+            </Pressable>
+          )}
+          <Ionicons
+            onPress={() => setShowMenu(true)}
+            name='menu'
+            size={32}
+            color='white'
+          />
+        </View>
         <Menu isShown={showMenu} onClose={() => setShowMenu(false)} />
       </View>
       <View
@@ -199,6 +212,12 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "600",
     fontSize: 24,
+    flex: 1,
+  },
+  headerIcons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
   },
   input: {
     height: 48,

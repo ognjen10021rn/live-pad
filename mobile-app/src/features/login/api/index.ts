@@ -1,4 +1,4 @@
-import { useParseJwt } from "@/hooks/useParseJWT";
+import { isAdminFromToken, useParseJwt } from "@/hooks/useParseJWT";
 import { API_URL } from "@/paths";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
@@ -24,6 +24,7 @@ export const handleDeepLink = async (url: string) => {
         })
       );
       await AsyncStorage.setItem("token", token);
+      await AsyncStorage.setItem("isAdmin", JSON.stringify(isAdminFromToken(token)));
       router.replace("/homepage/homepage");
     } else {
       console.log("No token found in URL");
@@ -62,6 +63,7 @@ export const loginUser = async (text: string, password: string) => {
         userId: user.id,
       })
     );
+    await AsyncStorage.setItem("isAdmin", JSON.stringify(isAdminFromToken(tkn.token)));
     router.replace("/homepage/homepage");
   } catch (error) {
     console.log(error, "Login screen");
